@@ -1,0 +1,17 @@
+{
+    "window.commandCenter": true,
+    "remote.SSH.remotePlatform": {
+        "login2.capella.hpc.tu-dresden.de": "linux"
+    },
+    "cursor.cpp.disabledLanguages": [
+        "plaintext"
+    ],
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "explorer.confirmDelete": false,
+    "git.ignoreRebaseWarning": true,
+    "remote.SSH.connectTimeout": 120,
+    "terminal.integrated.fontFamily": "MesloLGS NF",
+    "terminal.integrated.fontSize": 13
+}
+

@@ -1,0 +1,29 @@
+# Cursor Extensions
+# Install: cat extensions.txt | grep -v "^#" | xargs -L 1 cursor --install-extension
+
+# Python
+ms-python.python
+ms-python.debugpy
+
+# Jupyter
+ms-toolsai.jupyter
+ms-toolsai.jupyter-renderers
+ms-toolsai.vscode-jupyter-cell-tags
+ms-toolsai.vscode-jupyter-slideshow
+
+# Docker
+ms-azuretools.vscode-docker
+ms-azuretools.vscode-containers
+
+# Languages
+fwcd.kotlin
+myriad-dreamin.tinymist
+
+# GitHub
+github.vscode-github-actions
+
+# Utilities
+mechatroner.rainbow-csv
+tomoki1207.pdf
+vscjava.vscode-gradle
+
