@@ -1,6 +1,10 @@
 # Cursor Extensions
 # Install: cat extensions.txt | grep -v "^#" | xargs -L 1 cursor --install-extension
 
+# Theme
+arcticicestudio.nord-visual-studio-code
+zhuangtongfa.material-theme
+
 # Python
 ms-python.python
 ms-python.debugpy
@@ -18,6 +22,8 @@ ms-azuretools.vscode-containers
 # Languages
 fwcd.kotlin
 myriad-dreamin.tinymist
+james-yu.latex-workshop
+typespec.typespec-vscode
 
 # GitHub
 github.vscode-github-actions

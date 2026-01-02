@@ -12,6 +12,8 @@
     "git.ignoreRebaseWarning": true,
     "remote.SSH.connectTimeout": 120,
     "terminal.integrated.fontFamily": "MesloLGS NF",
-    "terminal.integrated.fontSize": 13
+    "terminal.integrated.fontSize": 13,
+    "remote.autoForwardPortsSource": "hybrid",
+    "workbench.colorTheme": "Nord"
 }
 
