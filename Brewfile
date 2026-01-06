@@ -87,4 +87,3 @@ cask "obs"
 
 # Utilities
 cask "the-unarchiver"
-
