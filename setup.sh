@@ -459,7 +459,24 @@ setup_iterm() {
 }
 
 # ===========================================
-# 9. macOS Settings
+# 10. Setup tmux
+# ===========================================
+
+setup_tmux() {
+    print_header "Setting up tmux"
+    
+    if [ -f "$SCRIPT_DIR/configs/.tmux.conf" ]; then
+        backup_file "$HOME/.tmux.conf"
+        cp "$SCRIPT_DIR/configs/.tmux.conf" "$HOME/.tmux.conf"
+        print_success "Copied .tmux.conf"
+        print_info "Prefix key: C-a | Split: | and - | Reload: C-a r"
+    else
+        print_warning "tmux config not found at $SCRIPT_DIR/configs/.tmux.conf"
+    fi
+}
+
+# ===========================================
+# 11. macOS Settings
 # ===========================================
 
 configure_macos() {
@@ -559,6 +576,7 @@ main() {
     setup_fzf
     setup_cursor
     setup_iterm
+    setup_tmux
     
     # macOS settings (optional)
     echo ""
