@@ -27,7 +27,7 @@ chmod +x setup.sh
 
 ### Apps
 
-iTerm2, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Telegram, Zoom, Brave, VLC, OBS
+iTerm2, Ghostty, Kitty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Telegram, Zoom, Brave, VLC, OBS
 
 > Already installed apps will be skipped. Missing ones will prompt for confirmation.
 

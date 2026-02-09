@@ -77,7 +77,7 @@ ask_install() {
 
 install_homebrew() {
     print_header "Installing Homebrew"
-    
+
     if command -v brew &> /dev/null; then
         print_success "Homebrew is already installed"
         print_info "Updating Homebrew..."
@@ -85,13 +85,13 @@ install_homebrew() {
     else
         print_info "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        
+
         # Add Homebrew to PATH for Apple Silicon
         if [[ $(uname -m) == "arm64" ]]; then
             echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
             eval "$(/opt/homebrew/bin/brew shellenv)"
         fi
-        
+
         print_success "Homebrew installed"
     fi
 }
@@ -102,19 +102,19 @@ install_homebrew() {
 
 install_brew_packages() {
     print_header "Installing Brew Packages"
-    
+
     if [ ! -f "$SCRIPT_DIR/Brewfile" ]; then
         print_error "Brewfile not found at $SCRIPT_DIR/Brewfile"
         exit 1
     fi
-    
+
     # Install taps
     print_info "Adding taps..."
     grep '^tap ' "$SCRIPT_DIR/Brewfile" | while read -r line; do
         tap_name=$(echo "$line" | sed 's/tap "\(.*\)"/\1/')
         brew tap "$tap_name" 2>/dev/null || true
     done
-    
+
     # Install/update formulae (CLI tools)
     print_info "Installing CLI tools..."
     grep '^brew ' "$SCRIPT_DIR/Brewfile" | while read -r line; do
@@ -135,13 +135,13 @@ install_brew_packages() {
             brew install "$formula" 2>/dev/null || print_warning "Failed to install $formula"
         fi
     done
-    
+
     # Install casks (GUI apps) - check if already installed
     print_info "Installing GUI applications..."
-    
+
     grep '^cask ' "$SCRIPT_DIR/Brewfile" | while read -r line; do
         cask=$(echo "$line" | sed 's/cask "\([^"]*\)".*/\1/')
-        
+
         # Map cask to app name
         case "$cask" in
             "iterm2") app_name="iTerm" ;;
@@ -159,7 +159,7 @@ install_brew_packages() {
             "the-unarchiver") app_name="The Unarchiver" ;;
             *) app_name="$cask" ;;
         esac
-        
+
         # Skip fonts - just install them
         if [[ "$cask" == font-* ]]; then
             if brew list --cask "$cask" &>/dev/null; then
@@ -170,7 +170,7 @@ install_brew_packages() {
             fi
             continue
         fi
-        
+
         # Check if app exists
         if app_installed "$app_name"; then
             if [ "$UPDATE_PACKAGES" = true ]; then
@@ -192,7 +192,7 @@ install_brew_packages() {
             fi
         fi
     done
-    
+
     print_success "Brew packages installed"
 }
 
@@ -202,7 +202,7 @@ install_brew_packages() {
 
 install_oh_my_zsh() {
     print_header "Installing Oh My Zsh"
-    
+
     if [ -d "$HOME/.oh-my-zsh" ]; then
         print_success "Oh My Zsh is already installed"
     else
@@ -210,7 +210,7 @@ install_oh_my_zsh() {
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
         print_success "Oh My Zsh installed"
     fi
-    
+
     # Install Powerlevel10k theme
     print_info "Installing Powerlevel10k theme..."
     local p10k_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
@@ -220,7 +220,7 @@ install_oh_my_zsh() {
         git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$p10k_dir"
         print_success "Powerlevel10k installed"
     fi
-    
+
     # Install zsh-autosuggestions plugin
     print_info "Installing zsh-autosuggestions..."
     local autosuggestions_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
@@ -230,7 +230,7 @@ install_oh_my_zsh() {
         git clone https://github.com/zsh-users/zsh-autosuggestions "$autosuggestions_dir"
         print_success "zsh-autosuggestions installed"
     fi
-    
+
     # Install zsh-syntax-highlighting plugin
     print_info "Installing zsh-syntax-highlighting..."
     local syntax_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
@@ -240,7 +240,7 @@ install_oh_my_zsh() {
         git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$syntax_dir"
         print_success "zsh-syntax-highlighting installed"
     fi
-    
+
     # Copy Powerlevel10k config
     if [ -f "$SCRIPT_DIR/configs/.p10k.zsh" ]; then
         backup_file "$HOME/.p10k.zsh"
@@ -255,28 +255,28 @@ install_oh_my_zsh() {
 
 copy_configs() {
     print_header "Copying Configuration Files"
-    
+
     # .zshrc
     if [ -f "$SCRIPT_DIR/configs/.zshrc" ]; then
         backup_file "$HOME/.zshrc"
         cp "$SCRIPT_DIR/configs/.zshrc" "$HOME/.zshrc"
         print_success "Copied .zshrc"
     fi
-    
+
     # .zprofile (runs before .zshrc, needed for pyenv)
     if [ -f "$SCRIPT_DIR/configs/.zprofile" ]; then
         backup_file "$HOME/.zprofile"
         cp "$SCRIPT_DIR/configs/.zprofile" "$HOME/.zprofile"
         print_success "Copied .zprofile"
     fi
-    
+
     # .gitconfig
     if [ -f "$SCRIPT_DIR/configs/.gitconfig" ]; then
         backup_file "$HOME/.gitconfig"
         cp "$SCRIPT_DIR/configs/.gitconfig" "$HOME/.gitconfig"
         print_success "Copied .gitconfig"
     fi
-    
+
     # SSH config
     if [ -f "$SCRIPT_DIR/configs/.ssh/config" ]; then
         mkdir -p "$HOME/.ssh"
@@ -285,7 +285,7 @@ copy_configs() {
         chmod 600 "$HOME/.ssh/config"
         print_success "Copied SSH config"
     fi
-    
+
     # Generate SSH key if not exists
     if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
         print_info "Generating SSH key..."
@@ -307,15 +307,15 @@ copy_configs() {
 
 setup_python() {
     print_header "Setting up Python Environment"
-    
+
     # Initialize pyenv (might not be in PATH yet)
     export PYENV_ROOT="$HOME/.pyenv"
     export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
-    
+
     # Install Python versions
     local python_versions=("3.11.9" "3.12.4")
-    
+
     for version in "${python_versions[@]}"; do
         if pyenv versions | grep -q "$version"; then
             print_success "Python $version is already installed"
@@ -325,7 +325,7 @@ setup_python() {
             print_success "Python $version installed"
         fi
     done
-    
+
     # Set global Python version
     pyenv global 3.12.4
     print_success "Set Python 3.12.4 as global default"
@@ -337,10 +337,10 @@ setup_python() {
 
 install_pipx_packages() {
     print_header "Installing pipx Packages"
-    
+
     # Ensure pipx is available
     export PATH="$HOME/.local/bin:$PATH"
-    
+
     # ML/Data Science tools
     local packages=(
         "poetry"
@@ -356,7 +356,7 @@ install_pipx_packages() {
         "httpie"
         "tldr"
     )
-    
+
     for package in "${packages[@]}"; do
         if pipx list | grep -q "$package"; then
             if [ "$UPDATE_PACKAGES" = true ]; then
@@ -378,7 +378,7 @@ install_pipx_packages() {
 
 setup_fzf() {
     print_header "Setting up FZF"
-    
+
     if [ -f ~/.fzf.zsh ]; then
         print_success "FZF is already configured"
     else
@@ -394,9 +394,9 @@ setup_fzf() {
 
 setup_cursor() {
     print_header "Setting up Cursor IDE"
-    
+
     local cursor_config_dir="$HOME/Library/Application Support/Cursor/User"
-    
+
     # Copy settings.json
     if [ -f "$SCRIPT_DIR/configs/cursor/settings.json" ]; then
         mkdir -p "$cursor_config_dir"
@@ -404,7 +404,7 @@ setup_cursor() {
         cp "$SCRIPT_DIR/configs/cursor/settings.json" "$cursor_config_dir/settings.json"
         print_success "Copied Cursor settings.json"
     fi
-    
+
     # Install extensions
     if [ -f "$SCRIPT_DIR/configs/cursor/extensions.txt" ]; then
         print_info "Installing Cursor extensions..."
@@ -412,7 +412,7 @@ setup_cursor() {
             # Skip comments and empty lines
             [[ "$extension" =~ ^#.*$ ]] && continue
             [[ -z "$extension" ]] && continue
-            
+
             print_info "Installing extension: $extension"
             cursor --install-extension "$extension" 2>/dev/null || print_warning "Could not install $extension"
         done < "$SCRIPT_DIR/configs/cursor/extensions.txt"
@@ -426,10 +426,10 @@ setup_cursor() {
 
 setup_iterm() {
     print_header "Setting up iTerm2"
-    
+
     local iterm_plist="$SCRIPT_DIR/configs/iterm2/com.googlecode.iterm2.plist"
     local target_plist="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
-    
+
     if [ -f "$iterm_plist" ]; then
         # Check if iTerm is running
         if pgrep -x "iTerm2" > /dev/null; then
@@ -444,17 +444,47 @@ setup_iterm() {
                 return
             fi
         fi
-        
+
         backup_file "$target_plist"
         cp "$iterm_plist" "$target_plist"
-        
+
         # Tell macOS to reload preferences
         defaults read com.googlecode.iterm2 &>/dev/null || true
-        
+
         print_success "iTerm2 settings restored"
         print_info "Settings include: color scheme, fonts, keybindings, profiles"
     else
         print_warning "iTerm2 config not found at $iterm_plist"
+    fi
+}
+
+# ===========================================
+# 9.1. Setup Kitty
+# ===========================================
+
+setup_kitty() {
+    print_header "Setting up Kitty terminal"
+
+    # Check if Kitty is already installed
+    if [ -d "$HOME/Applications/kitty.app" ] || [ -d "/Applications/kitty.app" ]; then
+        print_success "Kitty is already installed"
+    else
+        print_info "Installing Kitty terminal..."
+        curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n
+
+        if [ -d "$HOME/Applications/kitty.app" ] || [ -d "$HOME/.local/kitty.app" ]; then
+            print_success "Kitty installed successfully"
+
+            # Create symlinks for CLI usage
+            if [ -d "$HOME/.local/kitty.app" ]; then
+                mkdir -p "$HOME/.local/bin"
+                ln -sf "$HOME/.local/kitty.app/bin/kitty" "$HOME/.local/bin/kitty"
+                ln -sf "$HOME/.local/kitty.app/bin/kitten" "$HOME/.local/bin/kitten"
+                print_info "Created symlinks in ~/.local/bin"
+            fi
+        else
+            print_error "Kitty installation failed"
+        fi
     fi
 }
 
@@ -464,7 +494,7 @@ setup_iterm() {
 
 setup_tmux() {
     print_header "Setting up tmux"
-    
+
     if [ -f "$SCRIPT_DIR/configs/.tmux.conf" ]; then
         backup_file "$HOME/.tmux.conf"
         cp "$SCRIPT_DIR/configs/.tmux.conf" "$HOME/.tmux.conf"
@@ -481,54 +511,54 @@ setup_tmux() {
 
 configure_macos() {
     print_header "Configuring macOS Settings"
-    
+
     print_info "Applying macOS preferences..."
-    
+
     # Finder: show hidden files
     defaults write com.apple.finder AppleShowAllFiles -bool true
-    
+
     # Finder: show all filename extensions
     defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-    
+
     # Finder: show path bar
     defaults write com.apple.finder ShowPathbar -bool true
-    
+
     # Finder: show status bar
     defaults write com.apple.finder ShowStatusBar -bool true
-    
+
     # Disable the "Are you sure you want to open this application?" dialog
     defaults write com.apple.LaunchServices LSQuarantine -bool false
-    
+
     # Keyboard: fast key repeat
     defaults write NSGlobalDomain KeyRepeat -int 2
     defaults write NSGlobalDomain InitialKeyRepeat -int 15
-    
+
     # Trackpad: enable tap to click
     defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
-    
+
     # Screenshots: save to Desktop
     defaults write com.apple.screencapture location -string "${HOME}/Desktop"
-    
+
     # Screenshots: save as PNG
     defaults write com.apple.screencapture type -string "png"
-    
+
     # Dock: minimize windows into application icon
     defaults write com.apple.dock minimize-to-application -bool true
-    
+
     # Dock: auto-hide
     defaults write com.apple.dock autohide -bool true
-    
+
     # Dock: remove delay
     defaults write com.apple.dock autohide-delay -float 0
-    
+
     # Hot corners: bottom-right → Desktop
     defaults write com.apple.dock wvous-br-corner -int 4
     defaults write com.apple.dock wvous-br-modifier -int 0
-    
+
     # Restart affected applications
     killall Finder &> /dev/null || true
     killall Dock &> /dev/null || true
-    
+
     print_success "macOS settings configured"
     print_warning "Some changes may require a logout/restart to take effect"
 }
@@ -549,7 +579,7 @@ main() {
     echo -e "${NC}"
     echo "  dev environment setup"
     echo ""
-    
+
     # Ask for confirmation
     read -p "This will set up your development environment. Continue? [y/N] " -n 1 -r
     echo
@@ -557,7 +587,7 @@ main() {
         print_warning "Setup cancelled"
         exit 0
     fi
-    
+
     # Ask about updates
     echo ""
     read -p "Update existing packages to latest versions? [y/N] " -n 1 -r
@@ -565,7 +595,7 @@ main() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         UPDATE_PACKAGES=true
     fi
-    
+
     # Run setup steps
     install_homebrew
     install_brew_packages
@@ -576,8 +606,9 @@ main() {
     setup_fzf
     setup_cursor
     setup_iterm
+    setup_kitty
     setup_tmux
-    
+
     # macOS settings (optional)
     echo ""
     read -p "Apply macOS settings (Finder, Dock, keyboard)? [y/N] " -n 1 -r
@@ -585,10 +616,10 @@ main() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         configure_macos
     fi
-    
+
     # Done!
     print_header "Setup Complete! 🎉"
-    
+
     echo "Next steps:"
     echo ""
     echo "1. Restart your terminal or run: source ~/.zshrc"
@@ -600,10 +631,9 @@ main() {
     echo "5. Configure iTerm2:"
     echo "   - Set font to 'MesloLGS NF' in Preferences → Profiles → Text"
     echo ""
-    
+
     print_success "Happy coding! 🚀"
 }
 
 # Run main function
 main "$@"
-

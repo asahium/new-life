@@ -64,6 +64,7 @@ cask "font-jetbrains-mono-nerd-font"
 
 # Terminals & Editors
 cask "iterm2"
+cask "ghostty"
 cask "cursor"
 cask "zed"
 
@@ -73,10 +74,6 @@ cask "jetbrains-toolbox"
 
 # Productivity
 cask "obsidian"
-
-# Communication
-cask "telegram"
-cask "zoom"
 
 # Browsers
 cask "brave-browser"
