@@ -1,6 +1,5 @@
 # Taps
 tap "homebrew/bundle"
-tap "homebrew/cask-fonts"
 
 # ===========================================
 # CLI Tools
@@ -65,6 +64,7 @@ cask "font-jetbrains-mono-nerd-font"
 # Terminals & Editors
 cask "iterm2"
 cask "ghostty"
+cask "kitty"
 cask "cursor"
 cask "zed"
 
@@ -74,6 +74,10 @@ cask "jetbrains-toolbox"
 
 # Productivity
 cask "obsidian"
+
+# Communication
+cask "telegram"
+cask "zoom"
 
 # Browsers
 cask "brave-browser"

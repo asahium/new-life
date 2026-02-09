@@ -1,12 +1,13 @@
 # ===========================================
-# .zprofile - runs before .zshrc
+# .zprofile — runs before .zshrc on login shells
 # ===========================================
 
-# Homebrew
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew (Apple Silicon)
+if [[ $(uname -m) == "arm64" ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
 
-# Pyenv (must be in .zprofile for instant prompt)
+# pyenv (must be in .zprofile for GUI apps to pick up correct Python)
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init --path)"
-
+eval "$(pyenv init --path)" 2>/dev/null

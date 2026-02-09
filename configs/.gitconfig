@@ -1,119 +1,63 @@
 [user]
-    name = asahium
-    email = hiksdante@gmail.com
+    # Set your name and email here or via:
+    #   git config --global user.name "Your Name"
+    #   git config --global user.email "your@email.com"
 
 [init]
     defaultBranch = main
 
 [core]
     editor = nvim
-    autocrlf = input
     pager = delta
+    autocrlf = input
     excludesfile = ~/.gitignore_global
-
-[interactive]
-    diffFilter = delta --color-only
-
-[delta]
-    navigate = true
-    light = false
-    side-by-side = true
-    line-numbers = true
-
-[merge]
-    conflictstyle = diff3
-    tool = nvim
-
-[diff]
-    colorMoved = default
-    tool = nvim
 
 [pull]
     rebase = true
 
 [push]
-    default = current
     autoSetupRemote = true
+    default = current
 
 [fetch]
     prune = true
 
+[merge]
+    conflictstyle = diff3
+
 [rebase]
     autoStash = true
 
-[color]
-    ui = auto
+[diff]
+    colorMoved = default
+
+[delta]
+    navigate = true
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = Nord
+
+[delta "interactive"]
+    keep-plus-minus-markers = false
+
+[interactive]
+    diffFilter = delta --color-only
 
 [alias]
-    # Status
-    s = status -s
-    st = status
-
-    # Branches
-    br = branch
-    bra = branch -a
-    brd = branch -d
-    brD = branch -D
-
-    # Checkout
+    s = status -sb
     co = checkout
-    cob = checkout -b
-
-    # Commit
-    c = commit
-    cm = commit -m
-    ca = commit --amend
-    can = commit --amend --no-edit
-
-    # Add
-    a = add
-    aa = add -A
-    ap = add -p
-
-    # Push/Pull
-    p = push
-    pf = push --force-with-lease
-    pl = pull
-    plr = pull --rebase
-
-    # Diff
-    d = diff
-    ds = diff --staged
-    dc = diff --cached
-
-    # Log
-    l = log --oneline -15
-    lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
-    lga = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --all
-    hist = log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short
-
-    # Stash
-    ss = stash
-    sp = stash pop
-    sl = stash list
-
-    # Reset
+    br = branch
+    ci = commit
+    lg = log --oneline --graph --decorate -20
+    last = log -1 HEAD --stat
+    undo = reset HEAD~1 --mixed
+    amend = commit --amend --no-edit
     unstage = reset HEAD --
-    undo = reset --soft HEAD~1
-
-    # Other
-    last = log -1 HEAD
-    aliases = config --get-regexp alias
-    whoami = config user.email
-    contributors = shortlog --summary --numbered
-
-    # Clean
-    cleanup = !git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d
-
-[credential]
-    helper = osxkeychain
-
-[filter "lfs"]
-    clean = git-lfs clean -- %f
-    smudge = git-lfs smudge -- %f
-    process = git-lfs filter-process
-    required = true
+    wip = !git add -A && git commit -m 'WIP'
+    cleanup = !git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d
 
 [url "git@github.com:"]
     insteadOf = https://github.com/
 
+[credential]
+    helper = osxkeychain

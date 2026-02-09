@@ -7,15 +7,41 @@
 
 set -e  # Exit on error
 
-# Colors for output
+# ===========================================
+# Configuration — edit these to customize
+# ===========================================
+
+GIT_EMAIL=""               # Will prompt if empty
+GIT_NAME=""                # Will prompt if empty
+PYTHON_VERSIONS=("3.11.11" "3.12.8")
+PYTHON_GLOBAL="3.12.8"
+PIPX_PACKAGES=(
+    "poetry"
+    "black"
+    "ruff"
+    "mypy"
+    "isort"
+    "wandb"
+    "jupyter"
+    "jupyterlab"
+    "pytest"
+    "pre-commit"
+    "httpie"
+    "tldr"
+)
+
+# ===========================================
+# Colors & helpers
+# ===========================================
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG_FILE="$SCRIPT_DIR/setup.log"
 
 # Global flags
 UPDATE_PACKAGES=false
@@ -48,12 +74,26 @@ print_info() {
     echo -e "${BLUE}→ $1${NC}"
 }
 
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG_FILE"
+}
+
+# Wrap command with logging — stdout/stderr go to log, errors shown to user
+run_logged() {
+    log "Running: $*"
+    if ! "$@" >> "$LOG_FILE" 2>&1; then
+        log "FAILED: $*"
+        return 1
+    fi
+}
+
 backup_file() {
     local file="$1"
     if [ -f "$file" ]; then
         local backup="${file}.backup.$(date +%Y%m%d%H%M%S)"
         cp "$file" "$backup"
-        print_info "Backed up $file to $backup"
+        print_info "Backed up $file → $backup"
+        log "Backed up $file → $backup"
     fi
 }
 
@@ -72,6 +112,25 @@ ask_install() {
 }
 
 # ===========================================
+# 0. Gather user info
+# ===========================================
+
+gather_user_info() {
+    print_header "User Configuration"
+
+    if [ -z "$GIT_NAME" ]; then
+        read -p "  Your full name (for git): " GIT_NAME
+    fi
+    if [ -z "$GIT_EMAIL" ]; then
+        read -p "  Your email (for git & SSH key): " GIT_EMAIL
+    fi
+
+    print_success "Name: $GIT_NAME"
+    print_success "Email: $GIT_EMAIL"
+    log "User: $GIT_NAME <$GIT_EMAIL>"
+}
+
+# ===========================================
 # 1. Install Homebrew
 # ===========================================
 
@@ -81,7 +140,7 @@ install_homebrew() {
     if command -v brew &> /dev/null; then
         print_success "Homebrew is already installed"
         print_info "Updating Homebrew..."
-        brew update
+        run_logged brew update
     else
         print_info "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -93,6 +152,7 @@ install_homebrew() {
         fi
 
         print_success "Homebrew installed"
+        log "Homebrew installed"
     fi
 }
 
@@ -112,7 +172,7 @@ install_brew_packages() {
     print_info "Adding taps..."
     grep '^tap ' "$SCRIPT_DIR/Brewfile" | while read -r line; do
         tap_name=$(echo "$line" | sed 's/tap "\(.*\)"/\1/')
-        brew tap "$tap_name" 2>/dev/null || true
+        run_logged brew tap "$tap_name" || true
     done
 
     # Install/update formulae (CLI tools)
@@ -123,7 +183,7 @@ install_brew_packages() {
             if [ "$UPDATE_PACKAGES" = true ]; then
                 if brew outdated "$formula" &>/dev/null; then
                     print_info "Updating $formula..."
-                    brew upgrade "$formula" 2>/dev/null || print_warning "Failed to update $formula"
+                    run_logged brew upgrade "$formula" || print_warning "Failed to update $formula"
                 else
                     print_success "$formula (up to date)"
                 fi
@@ -132,7 +192,7 @@ install_brew_packages() {
             fi
         else
             print_info "Installing $formula..."
-            brew install "$formula" 2>/dev/null || print_warning "Failed to install $formula"
+            run_logged brew install "$formula" || print_warning "Failed to install $formula"
         fi
     done
 
@@ -142,31 +202,33 @@ install_brew_packages() {
     grep '^cask ' "$SCRIPT_DIR/Brewfile" | while read -r line; do
         cask=$(echo "$line" | sed 's/cask "\([^"]*\)".*/\1/')
 
-        # Map cask to app name
+        # Map cask to app name for detection
         case "$cask" in
-            "iterm2") app_name="iTerm" ;;
-            "cursor") app_name="Cursor" ;;
-            "zed") app_name="Zed" ;;
+            "iterm2")            app_name="iTerm" ;;
+            "ghostty")           app_name="Ghostty" ;;
+            "kitty")             app_name="kitty" ;;
+            "cursor")            app_name="Cursor" ;;
+            "zed")               app_name="Zed" ;;
             "visual-studio-code") app_name="Visual Studio Code" ;;
-            "docker") app_name="Docker" ;;
+            "docker")            app_name="Docker" ;;
             "jetbrains-toolbox") app_name="JetBrains Toolbox" ;;
-            "obsidian") app_name="Obsidian" ;;
-            "telegram") app_name="Telegram" ;;
-            "zoom") app_name="zoom.us" ;;
-            "brave-browser") app_name="Brave Browser" ;;
-            "vlc") app_name="VLC" ;;
-            "obs") app_name="OBS" ;;
-            "the-unarchiver") app_name="The Unarchiver" ;;
-            *) app_name="$cask" ;;
+            "obsidian")          app_name="Obsidian" ;;
+            "telegram")          app_name="Telegram" ;;
+            "zoom")              app_name="zoom.us" ;;
+            "brave-browser")     app_name="Brave Browser" ;;
+            "vlc")               app_name="VLC" ;;
+            "obs")               app_name="OBS" ;;
+            "the-unarchiver")    app_name="The Unarchiver" ;;
+            *)                   app_name="$cask" ;;
         esac
 
-        # Skip fonts - just install them
+        # Skip fonts — just install them silently
         if [[ "$cask" == font-* ]]; then
             if brew list --cask "$cask" &>/dev/null; then
                 print_success "$cask (already installed)"
             else
                 print_info "Installing font: $cask..."
-                brew install --cask "$cask" 2>/dev/null || true
+                run_logged brew install --cask "$cask" --no-quarantine || true
             fi
             continue
         fi
@@ -176,7 +238,7 @@ install_brew_packages() {
             if [ "$UPDATE_PACKAGES" = true ]; then
                 if brew outdated --cask "$cask" &>/dev/null 2>&1; then
                     print_info "Updating $app_name..."
-                    brew upgrade --cask "$cask" 2>/dev/null || print_warning "Failed to update $cask"
+                    run_logged brew upgrade --cask "$cask" || print_warning "Failed to update $cask"
                 else
                     print_success "$app_name (up to date)"
                 fi
@@ -186,7 +248,7 @@ install_brew_packages() {
         else
             if ask_install "$app_name"; then
                 print_info "Installing $cask..."
-                brew install --cask "$cask" 2>/dev/null || print_warning "Failed to install $cask"
+                run_logged brew install --cask "$cask" --no-quarantine || print_warning "Failed to install $cask"
             else
                 print_warning "Skipped $app_name"
             fi
@@ -194,6 +256,7 @@ install_brew_packages() {
     done
 
     print_success "Brew packages installed"
+    log "Brew packages step completed"
 }
 
 # ===========================================
@@ -241,11 +304,13 @@ install_oh_my_zsh() {
         print_success "zsh-syntax-highlighting installed"
     fi
 
-    # Copy Powerlevel10k config
+    # Copy Powerlevel10k config if provided
     if [ -f "$SCRIPT_DIR/configs/.p10k.zsh" ]; then
         backup_file "$HOME/.p10k.zsh"
         cp "$SCRIPT_DIR/configs/.p10k.zsh" "$HOME/.p10k.zsh"
         print_success "Copied Powerlevel10k config (.p10k.zsh)"
+    else
+        print_info "No .p10k.zsh provided — run 'p10k configure' after setup"
     fi
 }
 
@@ -261,6 +326,8 @@ copy_configs() {
         backup_file "$HOME/.zshrc"
         cp "$SCRIPT_DIR/configs/.zshrc" "$HOME/.zshrc"
         print_success "Copied .zshrc"
+    else
+        print_warning ".zshrc not found in configs/"
     fi
 
     # .zprofile (runs before .zshrc, needed for pyenv)
@@ -268,28 +335,49 @@ copy_configs() {
         backup_file "$HOME/.zprofile"
         cp "$SCRIPT_DIR/configs/.zprofile" "$HOME/.zprofile"
         print_success "Copied .zprofile"
+    else
+        print_warning ".zprofile not found in configs/"
     fi
 
     # .gitconfig
     if [ -f "$SCRIPT_DIR/configs/.gitconfig" ]; then
         backup_file "$HOME/.gitconfig"
         cp "$SCRIPT_DIR/configs/.gitconfig" "$HOME/.gitconfig"
-        print_success "Copied .gitconfig"
+
+        # Set user name and email
+        git config --global user.name "$GIT_NAME"
+        git config --global user.email "$GIT_EMAIL"
+
+        print_success "Copied .gitconfig (user: $GIT_NAME <$GIT_EMAIL>)"
+    else
+        print_warning ".gitconfig not found in configs/"
+    fi
+
+    # .tmux.conf
+    if [ -f "$SCRIPT_DIR/configs/.tmux.conf" ]; then
+        backup_file "$HOME/.tmux.conf"
+        cp "$SCRIPT_DIR/configs/.tmux.conf" "$HOME/.tmux.conf"
+        print_success "Copied .tmux.conf"
+    else
+        print_warning ".tmux.conf not found in configs/"
     fi
 
     # SSH config
     if [ -f "$SCRIPT_DIR/configs/.ssh/config" ]; then
         mkdir -p "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh"
         backup_file "$HOME/.ssh/config"
         cp "$SCRIPT_DIR/configs/.ssh/config" "$HOME/.ssh/config"
         chmod 600 "$HOME/.ssh/config"
         print_success "Copied SSH config"
+    else
+        print_warning "SSH config not found in configs/.ssh/"
     fi
 
     # Generate SSH key if not exists
     if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
-        print_info "Generating SSH key..."
-        ssh-keygen -t ed25519 -C "hiksdante@gmail.com" -f "$HOME/.ssh/id_ed25519" -N ""
+        print_info "Generating SSH key for $GIT_EMAIL..."
+        ssh-keygen -t ed25519 -C "$GIT_EMAIL" -f "$HOME/.ssh/id_ed25519" -N ""
         print_success "SSH key generated"
         print_warning "Don't forget to add your SSH key to GitHub!"
         echo ""
@@ -299,6 +387,8 @@ copy_configs() {
     else
         print_success "SSH key already exists"
     fi
+
+    log "Configs copied"
 }
 
 # ===========================================
@@ -313,22 +403,20 @@ setup_python() {
     export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
 
-    # Install Python versions
-    local python_versions=("3.11.9" "3.12.4")
-
-    for version in "${python_versions[@]}"; do
+    for version in "${PYTHON_VERSIONS[@]}"; do
         if pyenv versions | grep -q "$version"; then
             print_success "Python $version is already installed"
         else
-            print_info "Installing Python $version..."
-            pyenv install "$version"
+            print_info "Installing Python $version (this may take a few minutes)..."
+            run_logged pyenv install "$version"
             print_success "Python $version installed"
         fi
     done
 
     # Set global Python version
-    pyenv global 3.12.4
-    print_success "Set Python 3.12.4 as global default"
+    pyenv global "$PYTHON_GLOBAL"
+    print_success "Set Python $PYTHON_GLOBAL as global default"
+    log "Python setup completed"
 }
 
 # ===========================================
@@ -341,35 +429,21 @@ install_pipx_packages() {
     # Ensure pipx is available
     export PATH="$HOME/.local/bin:$PATH"
 
-    # ML/Data Science tools
-    local packages=(
-        "poetry"
-        "black"
-        "ruff"
-        "mypy"
-        "isort"
-        "wandb"
-        "jupyter"
-        "jupyterlab"
-        "pytest"
-        "pre-commit"
-        "httpie"
-        "tldr"
-    )
-
-    for package in "${packages[@]}"; do
-        if pipx list | grep -q "$package"; then
+    for package in "${PIPX_PACKAGES[@]}"; do
+        if pipx list 2>/dev/null | grep -q "package $package"; then
             if [ "$UPDATE_PACKAGES" = true ]; then
                 print_info "Updating $package..."
-                pipx upgrade "$package" 2>/dev/null || print_warning "Failed to update $package"
+                run_logged pipx upgrade "$package" || print_warning "Failed to update $package"
             else
                 print_success "$package (already installed)"
             fi
         else
             print_info "Installing $package..."
-            pipx install "$package" || print_warning "Failed to install $package"
+            run_logged pipx install "$package" || print_warning "Failed to install $package"
         fi
     done
+
+    log "pipx packages step completed"
 }
 
 # ===========================================
@@ -383,7 +457,7 @@ setup_fzf() {
         print_success "FZF is already configured"
     else
         print_info "Running FZF install script..."
-        $(brew --prefix)/opt/fzf/install --all --no-bash --no-fish
+        "$(brew --prefix)/opt/fzf/install" --all --no-bash --no-fish
         print_success "FZF configured"
     fi
 }
@@ -407,16 +481,20 @@ setup_cursor() {
 
     # Install extensions
     if [ -f "$SCRIPT_DIR/configs/cursor/extensions.txt" ]; then
-        print_info "Installing Cursor extensions..."
-        while IFS= read -r extension || [[ -n "$extension" ]]; do
-            # Skip comments and empty lines
-            [[ "$extension" =~ ^#.*$ ]] && continue
-            [[ -z "$extension" ]] && continue
+        if command -v cursor &> /dev/null; then
+            print_info "Installing Cursor extensions..."
+            while IFS= read -r extension || [[ -n "$extension" ]]; do
+                # Skip comments and empty lines
+                [[ "$extension" =~ ^#.*$ ]] && continue
+                [[ -z "$extension" ]] && continue
 
-            print_info "Installing extension: $extension"
-            cursor --install-extension "$extension" 2>/dev/null || print_warning "Could not install $extension"
-        done < "$SCRIPT_DIR/configs/cursor/extensions.txt"
-        print_success "Cursor extensions installed"
+                print_info "Installing extension: $extension"
+                cursor --install-extension "$extension" 2>/dev/null || print_warning "Could not install $extension"
+            done < "$SCRIPT_DIR/configs/cursor/extensions.txt"
+            print_success "Cursor extensions installed"
+        else
+            print_warning "Cursor CLI not found — install extensions manually or rerun after adding 'cursor' to PATH"
+        fi
     fi
 }
 
@@ -426,6 +504,11 @@ setup_cursor() {
 
 setup_iterm() {
     print_header "Setting up iTerm2"
+
+    if ! app_installed "iTerm"; then
+        print_info "iTerm2 is not installed, skipping configuration"
+        return
+    fi
 
     local iterm_plist="$SCRIPT_DIR/configs/iterm2/com.googlecode.iterm2.plist"
     local target_plist="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
@@ -459,50 +542,19 @@ setup_iterm() {
 }
 
 # ===========================================
-# 9.1. Setup Kitty
-# ===========================================
-
-setup_kitty() {
-    print_header "Setting up Kitty terminal"
-
-    # Check if Kitty is already installed
-    if [ -d "$HOME/Applications/kitty.app" ] || [ -d "/Applications/kitty.app" ]; then
-        print_success "Kitty is already installed"
-    else
-        print_info "Installing Kitty terminal..."
-        curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n
-
-        if [ -d "$HOME/Applications/kitty.app" ] || [ -d "$HOME/.local/kitty.app" ]; then
-            print_success "Kitty installed successfully"
-
-            # Create symlinks for CLI usage
-            if [ -d "$HOME/.local/kitty.app" ]; then
-                mkdir -p "$HOME/.local/bin"
-                ln -sf "$HOME/.local/kitty.app/bin/kitty" "$HOME/.local/bin/kitty"
-                ln -sf "$HOME/.local/kitty.app/bin/kitten" "$HOME/.local/bin/kitten"
-                print_info "Created symlinks in ~/.local/bin"
-            fi
-        else
-            print_error "Kitty installation failed"
-        fi
-    fi
-}
-
-# ===========================================
 # 10. Setup tmux
 # ===========================================
 
 setup_tmux() {
     print_header "Setting up tmux"
 
-    if [ -f "$SCRIPT_DIR/configs/.tmux.conf" ]; then
-        backup_file "$HOME/.tmux.conf"
-        cp "$SCRIPT_DIR/configs/.tmux.conf" "$HOME/.tmux.conf"
-        print_success "Copied .tmux.conf"
-        print_info "Prefix key: C-a | Split: | and - | Reload: C-a r"
+    if [ -f "$HOME/.tmux.conf" ]; then
+        print_success "tmux config already in place"
     else
-        print_warning "tmux config not found at $SCRIPT_DIR/configs/.tmux.conf"
+        print_warning "tmux config was not copied (file missing from configs/)"
     fi
+
+    print_info "Prefix key: C-a | Split: | and - | Reload: C-a r"
 }
 
 # ===========================================
@@ -561,6 +613,7 @@ configure_macos() {
 
     print_success "macOS settings configured"
     print_warning "Some changes may require a logout/restart to take effect"
+    log "macOS settings applied"
 }
 
 # ===========================================
@@ -580,6 +633,10 @@ main() {
     echo "  dev environment setup"
     echo ""
 
+    # Initialize log
+    echo "=== Setup started at $(date) ===" > "$LOG_FILE"
+    log "Script directory: $SCRIPT_DIR"
+
     # Ask for confirmation
     read -p "This will set up your development environment. Continue? [y/N] " -n 1 -r
     echo
@@ -596,6 +653,9 @@ main() {
         UPDATE_PACKAGES=true
     fi
 
+    # Gather user info (name, email)
+    gather_user_info
+
     # Run setup steps
     install_homebrew
     install_brew_packages
@@ -606,7 +666,6 @@ main() {
     setup_fzf
     setup_cursor
     setup_iterm
-    setup_kitty
     setup_tmux
 
     # macOS settings (optional)
@@ -618,7 +677,7 @@ main() {
     fi
 
     # Done!
-    print_header "Setup Complete! 🎉"
+    print_header "Setup Complete!"
 
     echo "Next steps:"
     echo ""
@@ -627,12 +686,14 @@ main() {
     echo "3. Add your SSH key to GitHub:"
     echo "   - Copy: pbcopy < ~/.ssh/id_ed25519.pub"
     echo "   - Go to: https://github.com/settings/keys"
-    echo "4. Login to apps: 1Password, Docker, etc."
-    echo "5. Configure iTerm2:"
-    echo "   - Set font to 'MesloLGS NF' in Preferences → Profiles → Text"
+    echo "4. Login to apps: Docker, etc."
+    echo "5. Set iTerm2 font to 'MesloLGS NF' (Preferences → Profiles → Text)"
+    echo ""
+    echo "Log file: $LOG_FILE"
     echo ""
 
-    print_success "Happy coding! 🚀"
+    log "Setup completed successfully"
+    print_success "Happy coding!"
 }
 
 # Run main function
