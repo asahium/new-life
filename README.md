@@ -21,15 +21,16 @@ The script will prompt for your name and email (used for git config and SSH key 
 |----------|----------|
 | Essential | git, gh, wget, curl, jq, yq |
 | Modern replacements | bat, eza, fd, ripgrep, fzf, zoxide |
-| Monitoring | btop, htop |
+| Monitoring | btop, htop, mtop |
 | Files | tree, trash, nnn |
 | Dev | tmux, neovim, lazygit, delta |
 | Python | pyenv, pyenv-virtualenv, pipx |
 | Node | node, nvm |
+| Utilities | mole, tldr, watch, mas |
 
 ### Apps
 
-iTerm2, Ghostty, Kitty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Telegram, Zoom, Brave, VLC, OBS
+Ghostty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS, The Unarchiver, Maccy
 
 > Already installed apps will be skipped. Missing ones will prompt for confirmation.
 
@@ -54,13 +55,12 @@ iTerm2, Ghostty, Kitty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Telegr
 │   ├── .zprofile                     # Login shell config (Homebrew, pyenv)
 │   ├── .gitconfig                    # Git config (delta, aliases, SSH)
 │   ├── .tmux.conf                    # tmux config (C-a prefix, Nord theme)
+│   ├── .p10k.zsh                     # Powerlevel10k prompt config
 │   ├── .ssh/
 │   │   └── config                    # SSH config (Keychain, GitHub, GitLab)
-│   ├── cursor/
-│   │   ├── settings.json             # Cursor IDE settings
-│   │   └── extensions.txt            # Cursor extensions list
-│   └── iterm2/
-│       └── com.googlecode.iterm2.plist
+│   └── cursor/
+│       ├── settings.json             # Cursor IDE settings
+│       └── extensions.txt            # Cursor extensions list
 └── README.md
 ```
 
@@ -130,7 +130,6 @@ Either edit `GIT_NAME` and `GIT_EMAIL` at the top of `setup.sh`, or leave them e
 1. `source ~/.zshrc`
 2. `p10k configure` — set up your Powerlevel10k prompt
 3. Add SSH key to GitHub: `pbcopy < ~/.ssh/id_ed25519.pub`
-4. Set iTerm2 font to `MesloLGS NF` (Preferences → Profiles → Text)
 
 ## Logging
 

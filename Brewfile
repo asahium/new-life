@@ -1,5 +1,6 @@
 # Taps
 tap "homebrew/bundle"
+tap "jepeake/mtop"
 
 # ===========================================
 # CLI Tools
@@ -24,6 +25,7 @@ brew "zoxide"                # Better cd
 # System monitoring
 brew "btop"                  # Better top
 brew "htop"
+brew "mtop"                  # Apple Silicon performance monitor
 
 # File management
 brew "tree"
@@ -45,7 +47,8 @@ brew "pipx"
 brew "node"
 brew "nvm"
 
-# Misc
+# Utilities
+brew "mole"                  # Deep clean and optimize Mac
 brew "tldr"                  # Simplified man pages
 brew "watch"
 brew "mas"                   # Mac App Store CLI
@@ -62,9 +65,7 @@ cask "font-jetbrains-mono-nerd-font"
 # ===========================================
 
 # Terminals & Editors
-cask "iterm2"
 cask "ghostty"
-cask "kitty"
 cask "cursor"
 cask "zed"
 
@@ -76,7 +77,6 @@ cask "jetbrains-toolbox"
 cask "obsidian"
 
 # Communication
-cask "telegram"
 cask "zoom"
 
 # Browsers
@@ -87,4 +87,5 @@ cask "vlc"
 cask "obs"
 
 # Utilities
+cask "maccy"                 # Clipboard manager
 cask "the-unarchiver"

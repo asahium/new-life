@@ -204,16 +204,13 @@ install_brew_packages() {
 
         # Map cask to app name for detection
         case "$cask" in
-            "iterm2")            app_name="iTerm" ;;
             "ghostty")           app_name="Ghostty" ;;
-            "kitty")             app_name="kitty" ;;
             "cursor")            app_name="Cursor" ;;
             "zed")               app_name="Zed" ;;
             "visual-studio-code") app_name="Visual Studio Code" ;;
             "docker")            app_name="Docker" ;;
             "jetbrains-toolbox") app_name="JetBrains Toolbox" ;;
             "obsidian")          app_name="Obsidian" ;;
-            "telegram")          app_name="Telegram" ;;
             "zoom")              app_name="zoom.us" ;;
             "brave-browser")     app_name="Brave Browser" ;;
             "vlc")               app_name="VLC" ;;
@@ -499,50 +496,7 @@ setup_cursor() {
 }
 
 # ===========================================
-# 9. Setup iTerm2
-# ===========================================
-
-setup_iterm() {
-    print_header "Setting up iTerm2"
-
-    if ! app_installed "iTerm"; then
-        print_info "iTerm2 is not installed, skipping configuration"
-        return
-    fi
-
-    local iterm_plist="$SCRIPT_DIR/configs/iterm2/com.googlecode.iterm2.plist"
-    local target_plist="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
-
-    if [ -f "$iterm_plist" ]; then
-        # Check if iTerm is running
-        if pgrep -x "iTerm2" > /dev/null; then
-            print_warning "iTerm2 is running. Please close it first to apply settings."
-            read -p "Close iTerm2 and continue? [y/N] " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                osascript -e 'quit app "iTerm"' 2>/dev/null || true
-                sleep 2
-            else
-                print_warning "Skipped iTerm2 setup"
-                return
-            fi
-        fi
-
-        backup_file "$target_plist"
-        cp "$iterm_plist" "$target_plist"
-
-        # Tell macOS to reload preferences
-        defaults read com.googlecode.iterm2 &>/dev/null || true
-
-        print_success "iTerm2 settings restored"
-        print_info "Settings include: color scheme, fonts, keybindings, profiles"
-    else
-        print_warning "iTerm2 config not found at $iterm_plist"
-    fi
-}
-
-# ===========================================
-# 10. Setup tmux
+# 9. Setup tmux
 # ===========================================
 
 setup_tmux() {
@@ -665,7 +619,6 @@ main() {
     install_pipx_packages
     setup_fzf
     setup_cursor
-    setup_iterm
     setup_tmux
 
     # macOS settings (optional)
@@ -687,7 +640,6 @@ main() {
     echo "   - Copy: pbcopy < ~/.ssh/id_ed25519.pub"
     echo "   - Go to: https://github.com/settings/keys"
     echo "4. Login to apps: Docker, etc."
-    echo "5. Set iTerm2 font to 'MesloLGS NF' (Preferences → Profiles → Text)"
     echo ""
     echo "Log file: $LOG_FILE"
     echo ""
