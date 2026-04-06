@@ -19,8 +19,6 @@ plugins=(
     colored-man-pages
 )
 
-source $ZSH/oh-my-zsh.sh
-
 # ===========================================
 # Powerlevel10k instant prompt
 # ===========================================
@@ -28,6 +26,8 @@ source $ZSH/oh-my-zsh.sh
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
     source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
+
+source $ZSH/oh-my-zsh.sh
 
 # Load Powerlevel10k config
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
@@ -41,9 +41,11 @@ export VISUAL="nvim"
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 
-# Homebrew (Apple Silicon)
-if [[ $(uname -m) == "arm64" ]]; then
+# Homebrew
+if [[ -x /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
 fi
 
 # ===========================================
@@ -60,8 +62,12 @@ eval "$(pyenv virtualenv-init -)" 2>/dev/null
 # ===========================================
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+if command -v brew >/dev/null 2>&1; then
+    NVM_BREW_PREFIX="$(brew --prefix nvm 2>/dev/null)"
+    [ -s "$NVM_BREW_PREFIX/nvm.sh" ] && \. "$NVM_BREW_PREFIX/nvm.sh"
+    [ -s "$NVM_BREW_PREFIX/etc/bash_completion.d/nvm" ] && \. "$NVM_BREW_PREFIX/etc/bash_completion.d/nvm"
+    unset NVM_BREW_PREFIX
+fi
 
 # ===========================================
 # PATH

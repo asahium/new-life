@@ -1,8 +1,5 @@
 {
     "window.commandCenter": true,
-    "remote.SSH.remotePlatform": {
-        "login2.capella.hpc.tu-dresden.de": "linux"
-    },
     "cursor.cpp.disabledLanguages": [
         "plaintext"
     ],
@@ -16,4 +13,3 @@
     "remote.autoForwardPortsSource": "hybrid",
     "workbench.colorTheme": "Nord"
 }
-

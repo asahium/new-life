@@ -111,6 +111,32 @@ ask_install() {
     [[ $REPLY =~ ^[Yy]$ ]]
 }
 
+is_blank() {
+    [[ -z "${1//[[:space:]]/}" ]]
+}
+
+is_valid_email() {
+    [[ "$1" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
+}
+
+ensure_homebrew_in_path() {
+    if command -v brew &> /dev/null; then
+        return 0
+    fi
+
+    if [ -x /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+        return 0
+    fi
+
+    if [ -x /usr/local/bin/brew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+        return 0
+    fi
+
+    return 1
+}
+
 # ===========================================
 # 0. Gather user info
 # ===========================================
@@ -118,12 +144,31 @@ ask_install() {
 gather_user_info() {
     print_header "User Configuration"
 
-    if [ -z "$GIT_NAME" ]; then
-        read -p "  Your full name (for git): " GIT_NAME
-    fi
-    if [ -z "$GIT_EMAIL" ]; then
-        read -p "  Your email (for git & SSH key): " GIT_EMAIL
-    fi
+    while is_blank "$GIT_NAME"; do
+        read -r -p "  Your full name (for git): " GIT_NAME
+        if is_blank "$GIT_NAME"; then
+            print_warning "Name cannot be empty"
+        fi
+    done
+
+    while true; do
+        if is_blank "$GIT_EMAIL"; then
+            read -r -p "  Your email (for git & SSH key): " GIT_EMAIL
+        fi
+
+        if is_blank "$GIT_EMAIL"; then
+            print_warning "Email cannot be empty"
+            continue
+        fi
+
+        if ! is_valid_email "$GIT_EMAIL"; then
+            print_warning "Invalid email format: $GIT_EMAIL"
+            GIT_EMAIL=""
+            continue
+        fi
+
+        break
+    done
 
     print_success "Name: $GIT_NAME"
     print_success "Email: $GIT_EMAIL"
@@ -137,7 +182,7 @@ gather_user_info() {
 install_homebrew() {
     print_header "Installing Homebrew"
 
-    if command -v brew &> /dev/null; then
+    if ensure_homebrew_in_path; then
         print_success "Homebrew is already installed"
         print_info "Updating Homebrew..."
         run_logged brew update
@@ -145,14 +190,14 @@ install_homebrew() {
         print_info "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-        # Add Homebrew to PATH for Apple Silicon
-        if [[ $(uname -m) == "arm64" ]]; then
-            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-            eval "$(/opt/homebrew/bin/brew shellenv)"
+        if ensure_homebrew_in_path; then
+            print_success "Homebrew installed"
+            log "Homebrew installed"
+        else
+            print_error "Homebrew installed but not found in PATH"
+            print_error "Open a new shell and rerun setup"
+            exit 1
         fi
-
-        print_success "Homebrew installed"
-        log "Homebrew installed"
     fi
 }
 
@@ -162,6 +207,11 @@ install_homebrew() {
 
 install_brew_packages() {
     print_header "Installing Brew Packages"
+
+    if ! ensure_homebrew_in_path; then
+        print_error "Homebrew is not available in PATH"
+        exit 1
+    fi
 
     if [ ! -f "$SCRIPT_DIR/Brewfile" ]; then
         print_error "Brewfile not found at $SCRIPT_DIR/Brewfile"
@@ -225,7 +275,7 @@ install_brew_packages() {
                 print_success "$cask (already installed)"
             else
                 print_info "Installing font: $cask..."
-                run_logged brew install --cask "$cask" --no-quarantine || true
+                run_logged brew install --cask "$cask" || true
             fi
             continue
         fi
@@ -245,7 +295,7 @@ install_brew_packages() {
         else
             if ask_install "$app_name"; then
                 print_info "Installing $cask..."
-                run_logged brew install --cask "$cask" --no-quarantine || print_warning "Failed to install $cask"
+                run_logged brew install --cask "$cask" || print_warning "Failed to install $cask"
             else
                 print_warning "Skipped $app_name"
             fi
@@ -450,6 +500,11 @@ install_pipx_packages() {
 setup_fzf() {
     print_header "Setting up FZF"
 
+    if ! ensure_homebrew_in_path; then
+        print_warning "Skipping FZF setup: Homebrew is not available in PATH"
+        return
+    fi
+
     if [ -f ~/.fzf.zsh ]; then
         print_success "FZF is already configured"
     else
@@ -496,7 +551,28 @@ setup_cursor() {
 }
 
 # ===========================================
-# 9. Setup tmux
+# 9. Setup Ghostty
+# ===========================================
+
+setup_ghostty() {
+    print_header "Setting up Ghostty"
+
+    local ghostty_config_dir="$HOME/.config/ghostty"
+
+    if [ -f "$SCRIPT_DIR/configs/ghostty/config" ]; then
+        mkdir -p "$ghostty_config_dir"
+        backup_file "$ghostty_config_dir/config"
+        cp "$SCRIPT_DIR/configs/ghostty/config" "$ghostty_config_dir/config"
+        print_success "Copied Ghostty config (Nord + SAND keybindings)"
+        print_info "SAND: Split(Cmd+D) Across(Cmd+T) Navigate(Cmd+Alt+Arrows) Destroy(Cmd+W)"
+        print_info "Quick terminal: Ctrl+\`"
+    else
+        print_warning "Ghostty config not found in configs/ghostty/"
+    fi
+}
+
+# ===========================================
+# 10. Setup tmux
 # ===========================================
 
 setup_tmux() {
@@ -509,65 +585,6 @@ setup_tmux() {
     fi
 
     print_info "Prefix key: C-a | Split: | and - | Reload: C-a r"
-}
-
-# ===========================================
-# 11. macOS Settings
-# ===========================================
-
-configure_macos() {
-    print_header "Configuring macOS Settings"
-
-    print_info "Applying macOS preferences..."
-
-    # Finder: show hidden files
-    defaults write com.apple.finder AppleShowAllFiles -bool true
-
-    # Finder: show all filename extensions
-    defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-
-    # Finder: show path bar
-    defaults write com.apple.finder ShowPathbar -bool true
-
-    # Finder: show status bar
-    defaults write com.apple.finder ShowStatusBar -bool true
-
-    # Disable the "Are you sure you want to open this application?" dialog
-    defaults write com.apple.LaunchServices LSQuarantine -bool false
-
-    # Keyboard: fast key repeat
-    defaults write NSGlobalDomain KeyRepeat -int 2
-    defaults write NSGlobalDomain InitialKeyRepeat -int 15
-
-    # Trackpad: enable tap to click
-    defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
-
-    # Screenshots: save to Desktop
-    defaults write com.apple.screencapture location -string "${HOME}/Desktop"
-
-    # Screenshots: save as PNG
-    defaults write com.apple.screencapture type -string "png"
-
-    # Dock: minimize windows into application icon
-    defaults write com.apple.dock minimize-to-application -bool true
-
-    # Dock: auto-hide
-    defaults write com.apple.dock autohide -bool true
-
-    # Dock: remove delay
-    defaults write com.apple.dock autohide-delay -float 0
-
-    # Hot corners: bottom-right → Desktop
-    defaults write com.apple.dock wvous-br-corner -int 4
-    defaults write com.apple.dock wvous-br-modifier -int 0
-
-    # Restart affected applications
-    killall Finder &> /dev/null || true
-    killall Dock &> /dev/null || true
-
-    print_success "macOS settings configured"
-    print_warning "Some changes may require a logout/restart to take effect"
-    log "macOS settings applied"
 }
 
 # ===========================================
@@ -619,15 +636,8 @@ main() {
     install_pipx_packages
     setup_fzf
     setup_cursor
+    setup_ghostty
     setup_tmux
-
-    # macOS settings (optional)
-    echo ""
-    read -p "Apply macOS settings (Finder, Dock, keyboard)? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        configure_macos
-    fi
 
     # Done!
     print_header "Setup Complete!"
