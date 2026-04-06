@@ -11,7 +11,7 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-The script will prompt for your name and email (used for git config and SSH key generation).
+The script requires a non-empty name and a valid email (used for git config and SSH key generation).
 
 ## What's Included
 
@@ -33,6 +33,7 @@ The script will prompt for your name and email (used for git config and SSH key 
 Ghostty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS, The Unarchiver, Maccy
 
 > Already installed apps will be skipped. Missing ones will prompt for confirmation.
+> `setup.sh` does not apply macOS Finder/Dock/keyboard defaults.
 
 ### Shell
 
@@ -58,6 +59,8 @@ Ghostty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS
 │   ├── .p10k.zsh                     # Powerlevel10k prompt config
 │   ├── .ssh/
 │   │   └── config                    # SSH config (Keychain, GitHub, GitLab)
+│   ├── ghostty/
+│   │   └── config                    # Ghostty terminal config
 │   └── cursor/
 │       ├── settings.json             # Cursor IDE settings
 │       └── extensions.txt            # Cursor extensions list
@@ -77,6 +80,10 @@ Delta as diff pager (side-by-side, Nord theme), auto-rebase, SSH for GitHub, use
 ### .tmux.conf
 
 `C-a` prefix, `|` and `-` splits, vim-style navigation, mouse support, Nord status bar.
+
+### Ghostty
+
+Nord theme, SAND keybindings, quick terminal hotkey.
 
 ### SSH
 
