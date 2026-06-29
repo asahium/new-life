@@ -14,6 +14,13 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+-- Disable unused remote-plugin providers. None of the plugins here need them,
+-- so turning them off silences the optional :checkhealth warnings.
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_node_provider = 0
+
 -- ----------------------------------------------------------------------------
 --  Options
 -- ----------------------------------------------------------------------------
@@ -185,20 +192,24 @@ require("lazy").setup({
   },
 
   -- Treesitter: better syntax highlighting and indentation.
+  -- Pinned to the stable `master` branch: the newer `main` branch is a rewrite
+  -- with a different API and no `nvim-treesitter.configs` module.
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "master",
     build = ":TSUpdate",
-    main = "nvim-treesitter.configs",
-    opts = {
-      ensure_installed = {
-        "bash", "c", "lua", "luadoc", "markdown", "markdown_inline",
-        "python", "javascript", "typescript", "tsx", "json", "yaml",
-        "toml", "html", "css", "go", "rust", "dockerfile", "vim", "vimdoc",
-      },
-      auto_install = true,
-      highlight = { enable = true },
-      indent = { enable = true },
-    },
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = {
+          "bash", "c", "lua", "luadoc", "markdown", "markdown_inline",
+          "python", "javascript", "typescript", "tsx", "json", "yaml",
+          "toml", "html", "css", "go", "rust", "dockerfile", "vim", "vimdoc",
+        },
+        auto_install = true,
+        highlight = { enable = true },
+        indent = { enable = true },
+      })
+    end,
   },
 
   -- Git: inline signs + hunk actions.
@@ -269,12 +280,28 @@ require("lazy").setup({
         yamlls = {},
       }
 
+      -- Some servers are built from source by mason and need their language
+      -- toolchain present (e.g. gopls needs `go`). Only auto-install those when
+      -- the toolchain exists, so a missing toolchain doesn't error on startup.
+      -- The server is still configured below, so it activates later if you
+      -- install the toolchain and the server binary.
+      local function has(bin) return vim.fn.executable(bin) == 1 end
+      local needs_toolchain = { gopls = "go" }
+
+      local ensure_installed = {}
+      for name in pairs(servers) do
+        local tool = needs_toolchain[name]
+        if not tool or has(tool) then
+          table.insert(ensure_installed, name)
+        end
+      end
+
       require("mason").setup()
       require("mason-tool-installer").setup({
         ensure_installed = { "stylua", "black", "isort", "prettier" },
       })
       require("mason-lspconfig").setup({
-        ensure_installed = vim.tbl_keys(servers),
+        ensure_installed = ensure_installed,
         handlers = {
           function(server_name)
             local cfg = servers[server_name] or {}
