@@ -255,6 +255,7 @@ install_brew_packages() {
         # Map cask to app name for detection
         case "$cask" in
             "ghostty")           app_name="Ghostty" ;;
+            "umputun/apps/agterm") app_name="agterm" ;;
             "cursor")            app_name="Cursor" ;;
             "zed")               app_name="Zed" ;;
             "visual-studio-code") app_name="Visual Studio Code" ;;
@@ -572,7 +573,63 @@ setup_ghostty() {
 }
 
 # ===========================================
-# 10. Setup tmux
+# 10. Setup agterm
+# ===========================================
+
+setup_agterm() {
+    print_header "Setting up agterm"
+
+    local agterm_config_dir="$HOME/.config/agterm"
+
+    if [ ! -d "$SCRIPT_DIR/configs/agterm" ]; then
+        print_warning "agterm config not found in configs/agterm/"
+        return
+    fi
+
+    mkdir -p "$agterm_config_dir"
+
+    # ghostty.conf (agterm-scoped terminal config, always loaded)
+    if [ -f "$SCRIPT_DIR/configs/agterm/ghostty.conf" ]; then
+        backup_file "$agterm_config_dir/ghostty.conf"
+        cp "$SCRIPT_DIR/configs/agterm/ghostty.conf" "$agterm_config_dir/ghostty.conf"
+        print_success "Copied agterm ghostty.conf"
+    fi
+
+    # keymap.conf (keybindings + custom commands)
+    if [ -f "$SCRIPT_DIR/configs/agterm/keymap.conf" ]; then
+        backup_file "$agterm_config_dir/keymap.conf"
+        cp "$SCRIPT_DIR/configs/agterm/keymap.conf" "$agterm_config_dir/keymap.conf"
+        print_success "Copied agterm keymap.conf"
+    fi
+
+    print_info "agtermctl CLI is bundled with the cask install"
+    print_info "Agent skills/status hooks: install from the app menu (Help ▸ Install …)"
+}
+
+# ===========================================
+# 11. Setup Neovim
+# ===========================================
+
+setup_neovim() {
+    print_header "Setting up Neovim"
+
+    local nvim_config_dir="$HOME/.config/nvim"
+
+    if [ ! -f "$SCRIPT_DIR/configs/nvim/init.lua" ]; then
+        print_warning "Neovim config not found in configs/nvim/"
+        return
+    fi
+
+    mkdir -p "$nvim_config_dir"
+    backup_file "$nvim_config_dir/init.lua"
+    cp "$SCRIPT_DIR/configs/nvim/init.lua" "$nvim_config_dir/init.lua"
+    print_success "Copied Neovim init.lua"
+    print_info "First 'nvim' launch auto-installs lazy.nvim + plugins"
+    print_info "Run ':checkhealth' after the first launch to verify the setup"
+}
+
+# ===========================================
+# 12. Setup tmux
 # ===========================================
 
 setup_tmux() {
@@ -637,6 +694,8 @@ main() {
     setup_fzf
     setup_cursor
     setup_ghostty
+    setup_agterm
+    setup_neovim
     setup_tmux
 
     # Done!

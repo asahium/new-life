@@ -1,6 +1,7 @@
 # Taps
 tap "homebrew/bundle"
 tap "jepeake/mtop"
+tap "umputun/apps"
 
 # ===========================================
 # CLI Tools
@@ -66,6 +67,7 @@ cask "font-jetbrains-mono-nerd-font"
 
 # Terminals & Editors
 cask "ghostty"
+cask "umputun/apps/agterm"    # Terminal for agentic flow (libghostty engine)
 cask "cursor"
 cask "zed"
 

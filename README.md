@@ -30,7 +30,7 @@ The script requires a non-empty name and a valid email (used for git config and 
 
 ### Apps
 
-Ghostty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS, The Unarchiver, Maccy
+Ghostty, agterm, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS, The Unarchiver, Maccy
 
 > Already installed apps will be skipped. Missing ones will prompt for confirmation.
 > `setup.sh` does not apply macOS Finder/Dock/keyboard defaults.
@@ -61,6 +61,11 @@ Ghostty, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS
 │   │   └── config                    # SSH config (Keychain, GitHub, GitLab)
 │   ├── ghostty/
 │   │   └── config                    # Ghostty terminal config
+│   ├── agterm/
+│   │   ├── ghostty.conf              # agterm-scoped terminal config
+│   │   └── keymap.conf               # agterm keybindings + custom commands
+│   ├── nvim/
+│   │   └── init.lua                  # Neovim config (lazy.nvim, LSP, Nord)
 │   └── cursor/
 │       ├── settings.json             # Cursor IDE settings
 │       └── extensions.txt            # Cursor extensions list
@@ -84,6 +89,56 @@ Delta as diff pager (side-by-side, Nord theme), auto-rebase, SSH for GitHub, use
 ### Ghostty
 
 Nord theme, SAND keybindings, quick terminal hotkey.
+
+### agterm
+
+[agterm](https://github.com/umputun/agterm) is a native macOS terminal for agentic flow — it organizes shells into named workspaces so several AI-agent sessions run side by side. It embeds Ghostty's engine (libghostty) for the actual terminal work.
+
+- `configs/agterm/ghostty.conf` — agterm-scoped terminal options (always loaded, never read by standalone Ghostty.app). Font/theme/opacity are managed in **Settings (Cmd+,)** and win over this file.
+- `configs/agterm/keymap.conf` — kitty-flavored keymap: built-in rebinds plus custom shell commands (Lazygit, open in Cursor/Zed, nnn, btop).
+
+**Usage:**
+
+- New session `⌘N`, new workspace `⇧⌘N`, open directory `⌘O`
+- Split a session `⌘D`, scratch overlay `⌘J`, quick terminal `` ⌃` ``, in-terminal search `⌘F`
+- Session palette `⌃P`, action palette `⌃⇧P`, custom commands `⌃⇧O`, MRU switch `⌃Tab`
+- Jump between sessions needing attention `⌃⌥↑/↓`
+- Drive it from scripts/agents with the bundled `agtermctl` CLI (e.g. `agtermctl session new --cwd .`, `agtermctl tree`). The cask installs `agtermctl` automatically.
+- To let an agent control it, install the agent skill and status hooks from the app's **Help** menu.
+
+### Neovim
+
+Modern single-file config (`configs/nvim/init.lua`) built on [lazy.nvim](https://github.com/folke/lazy.nvim), themed with Nord to match the rest. Leader key is `<Space>`.
+
+Included plugins: Treesitter, Telescope (fuzzy finder), LSP via mason (lua, python/pyright+ruff, ts, go, rust, bash, json, yaml), nvim-cmp completion, conform.nvim (format on save), gitsigns, neo-tree, lualine, which-key, Comment, autopairs, surround, indent guides, todo-comments.
+
+**Usage:**
+
+- First `nvim` launch auto-installs lazy.nvim and all plugins — let it finish, then restart. Run `:checkhealth` to verify, `:Lazy` to manage plugins, `:Mason` to manage LSP servers/formatters.
+- Press `<Space>` and wait to see all keybindings (which-key popup).
+
+Key mappings:
+
+```text
+# files / search (Telescope)
+<Space>ff  find files        <Space>fg  live grep
+<Space>fb  buffers           <Space>fr  recent files
+<Space>e   file explorer (neo-tree toggle)
+
+# LSP
+gd  definition   gr  references   K  hover docs
+<Space>rn rename   <Space>ca code action
+[d / ]d  prev/next diagnostic
+
+# git (gitsigns)
+]h / [h  next/prev hunk
+<Space>hs stage   <Space>hr reset   <Space>hp preview   <Space>hb blame
+
+# editing
+gcc  comment line   gc (visual) comment selection
+<Space>cf format buffer   <Space>w save   <Space>q quit
+J / K (visual) move lines up/down
+```
 
 ### SSH
 
