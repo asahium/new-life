@@ -45,6 +45,7 @@ LOG_FILE="$SCRIPT_DIR/setup.log"
 
 # Global flags
 UPDATE_PACKAGES=false
+ASSUME_YES=false
 
 # ===========================================
 # Helper Functions
@@ -106,6 +107,10 @@ app_installed() {
 # Ask to install with default No
 ask_install() {
     local name="$1"
+    if [ "$ASSUME_YES" = true ]; then
+        print_info "Installing ${name} (--yes)"
+        return 0
+    fi
     read -p "  Install ${name}? [y/N] " -n 1 -r
     echo
     [[ $REPLY =~ ^[Yy]$ ]]
@@ -138,11 +143,69 @@ ensure_homebrew_in_path() {
 }
 
 # ===========================================
+# Argument parsing
+# ===========================================
+
+usage() {
+    cat <<EOF
+new-life — dev environment setup for a fresh macOS machine
+
+Usage: ./setup.sh [options]
+
+Options:
+  -u, --update         Upgrade already-installed packages to the latest version
+  -y, --yes            Non-interactive: assume "yes" to all prompts
+                       (requires name & email to be set via flags or in the script)
+      --name NAME      Git user.name (skips the interactive prompt)
+      --email EMAIL    Git user.email (skips the interactive prompt)
+  -h, --help           Show this help and exit
+
+Examples:
+  ./setup.sh                                  # interactive
+  ./setup.sh --update                         # interactive, upgrade existing packages
+  ./setup.sh -y --name "Jane Doe" --email jane@example.com   # fully unattended
+EOF
+}
+
+parse_args() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -u|--update) UPDATE_PACKAGES=true; shift ;;
+            -y|--yes)    ASSUME_YES=true; shift ;;
+            --name)
+                [ -n "${2:-}" ] || { print_error "--name requires a value"; exit 1; }
+                GIT_NAME="$2"; shift 2 ;;
+            --email)
+                [ -n "${2:-}" ] || { print_error "--email requires a value"; exit 1; }
+                GIT_EMAIL="$2"; shift 2 ;;
+            -h|--help)   usage; exit 0 ;;
+            *)           print_error "Unknown option: $1"; echo; usage; exit 1 ;;
+        esac
+    done
+}
+
+# ===========================================
 # 0. Gather user info
 # ===========================================
 
 gather_user_info() {
     print_header "User Configuration"
+
+    # In non-interactive mode we cannot prompt — require valid values up front
+    if [ "$ASSUME_YES" = true ]; then
+        if is_blank "$GIT_NAME"; then
+            print_error "--yes requires a name (pass --name or set GIT_NAME in the script)"
+            exit 1
+        fi
+        if is_blank "$GIT_EMAIL" || ! is_valid_email "$GIT_EMAIL"; then
+            print_error "--yes requires a valid email (pass --email or set GIT_EMAIL in the script)"
+            exit 1
+        fi
+        print_success "Name: $GIT_NAME"
+        print_success "Email: $GIT_EMAIL"
+        log "User: $GIT_NAME <$GIT_EMAIL>"
+        return
+    fi
 
     while is_blank "$GIT_NAME"; do
         read -r -p "  Your full name (for git): " GIT_NAME
@@ -231,7 +294,8 @@ install_brew_packages() {
         formula=$(echo "$line" | sed 's/brew "\([^"]*\)".*/\1/')
         if brew list "$formula" &>/dev/null; then
             if [ "$UPDATE_PACKAGES" = true ]; then
-                if brew outdated "$formula" &>/dev/null; then
+                # brew outdated exits 1 when the formula IS outdated, 0 when current
+                if ! brew outdated "$formula" &>/dev/null; then
                     print_info "Updating $formula..."
                     run_logged brew upgrade "$formula" || print_warning "Failed to update $formula"
                 else
@@ -258,7 +322,6 @@ install_brew_packages() {
             "umputun/apps/agterm") app_name="agterm" ;;
             "cursor")            app_name="Cursor" ;;
             "zed")               app_name="Zed" ;;
-            "visual-studio-code") app_name="Visual Studio Code" ;;
             "docker")            app_name="Docker" ;;
             "jetbrains-toolbox") app_name="JetBrains Toolbox" ;;
             "obsidian")          app_name="Obsidian" ;;
@@ -284,7 +347,8 @@ install_brew_packages() {
         # Check if app exists
         if app_installed "$app_name"; then
             if [ "$UPDATE_PACKAGES" = true ]; then
-                if brew outdated --cask "$cask" &>/dev/null 2>&1; then
+                # brew outdated exits 1 when the cask IS outdated, 0 when current
+                if ! brew outdated --cask "$cask" &>/dev/null; then
                     print_info "Updating $app_name..."
                     run_logged brew upgrade --cask "$cask" || print_warning "Failed to update $cask"
                 else
@@ -447,6 +511,12 @@ setup_python() {
     print_header "Setting up Python Environment"
 
     # Initialize pyenv (might not be in PATH yet)
+    if ! command -v pyenv &> /dev/null; then
+        print_warning "pyenv not found in PATH — skipping Python setup"
+        log "Python setup skipped: pyenv unavailable"
+        return
+    fi
+
     export PYENV_ROOT="$HOME/.pyenv"
     export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
@@ -456,14 +526,20 @@ setup_python() {
             print_success "Python $version is already installed"
         else
             print_info "Installing Python $version (this may take a few minutes)..."
-            run_logged pyenv install "$version"
-            print_success "Python $version installed"
+            if run_logged pyenv install "$version"; then
+                print_success "Python $version installed"
+            else
+                print_warning "Failed to install Python $version — see $LOG_FILE"
+            fi
         fi
     done
 
     # Set global Python version
-    pyenv global "$PYTHON_GLOBAL"
-    print_success "Set Python $PYTHON_GLOBAL as global default"
+    if pyenv global "$PYTHON_GLOBAL" 2>/dev/null; then
+        print_success "Set Python $PYTHON_GLOBAL as global default"
+    else
+        print_warning "Could not set Python $PYTHON_GLOBAL as global (not installed?)"
+    fi
     log "Python setup completed"
 }
 
@@ -478,7 +554,9 @@ install_pipx_packages() {
     export PATH="$HOME/.local/bin:$PATH"
 
     for package in "${PIPX_PACKAGES[@]}"; do
-        if pipx list 2>/dev/null | grep -q "package $package"; then
+        # `pipx list --short` prints one "name version" per line — anchor to avoid
+        # substring matches (e.g. "pytest" matching "pytest-cov")
+        if pipx list --short 2>/dev/null | grep -q "^$package "; then
             if [ "$UPDATE_PACKAGES" = true ]; then
                 print_info "Updating $package..."
                 run_logged pipx upgrade "$package" || print_warning "Failed to update $package"
@@ -649,6 +727,8 @@ setup_tmux() {
 # ===========================================
 
 main() {
+    parse_args "$@"
+
     echo ""
     echo -e "${GREEN}"
     echo "  ███╗   ██╗███████╗██╗    ██╗    ██╗     ██╗███████╗███████╗"
@@ -665,20 +745,24 @@ main() {
     echo "=== Setup started at $(date) ===" > "$LOG_FILE"
     log "Script directory: $SCRIPT_DIR"
 
-    # Ask for confirmation
-    read -p "This will set up your development environment. Continue? [y/N] " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_warning "Setup cancelled"
-        exit 0
-    fi
+    # Ask for confirmation (skipped in non-interactive mode)
+    if [ "$ASSUME_YES" != true ]; then
+        read -p "This will set up your development environment. Continue? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_warning "Setup cancelled"
+            exit 0
+        fi
 
-    # Ask about updates
-    echo ""
-    read -p "Update existing packages to latest versions? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        UPDATE_PACKAGES=true
+        # Ask about updates (only if not already requested via --update)
+        if [ "$UPDATE_PACKAGES" != true ]; then
+            echo ""
+            read -p "Update existing packages to latest versions? [y/N] " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                UPDATE_PACKAGES=true
+            fi
+        fi
     fi
 
     # Gather user info (name, email)

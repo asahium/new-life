@@ -163,8 +163,10 @@ alias rm="trash"
 alias df="df -h"
 alias du="du -h"
 alias top="btop"
-alias grep="rg"
-alias find="fd"
+# Note: not aliasing grep/find themselves — rg/fd take different flags and would
+# break pasted `grep -r`/`find -name` one-liners. Use the tools directly.
+alias rgi="rg -i"
+alias fdd="fd --type d"
 
 # ===========================================
 # Functions

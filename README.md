@@ -13,6 +13,23 @@ chmod +x setup.sh
 
 The script requires a non-empty name and a valid email (used for git config and SSH key generation).
 
+### Options
+
+```text
+-u, --update         Upgrade already-installed packages to the latest version
+-y, --yes            Non-interactive: assume "yes" to all prompts
+                     (requires name & email via flags or set in the script)
+    --name NAME      Git user.name (skips the interactive prompt)
+    --email EMAIL    Git user.email (skips the interactive prompt)
+-h, --help           Show help and exit
+```
+
+Fully unattended run:
+
+```bash
+./setup.sh -y --name "Jane Doe" --email jane@example.com
+```
+
 ## What's Included
 
 ### CLI Tools
@@ -143,6 +160,11 @@ J / K (visual) move lines up/down
 ### SSH
 
 macOS Keychain integration, GitHub/GitLab hosts, ed25519 key.
+
+> The generated key has **no passphrase** (`-N ""`) for a frictionless first run.
+> On a work machine, generate it with a passphrase instead — the SSH config caches
+> it in Keychain, so you're only prompted once:
+> `ssh-keygen -t ed25519 -C "you@example.com" -f ~/.ssh/id_ed25519`
 
 ## Aliases
 
