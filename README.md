@@ -39,7 +39,7 @@ Fully unattended run:
 | Essential | git, gh, wget, curl, jq, yq |
 | Modern replacements | bat, eza, fd, ripgrep, fzf, zoxide |
 | Monitoring | btop, htop, mtop |
-| Files | tree, trash, nnn |
+| Files | tree, trash, nnn, yazi |
 | Dev | tmux, neovim, lazygit, delta |
 | Python | pyenv, pyenv-virtualenv, pipx |
 | Node | node, nvm |
@@ -47,7 +47,9 @@ Fully unattended run:
 
 ### Apps
 
-Ghostty, agterm, Cursor, Zed, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, VLC, OBS, The Unarchiver, Maccy
+Ghostty, agterm, Cursor, Zed, Suzuri, Docker, JetBrains Toolbox, Obsidian, Zoom, Brave, Firefox, VLC, OBS, Tinycast, Vorssaint, The Unarchiver, Maccy
+
+> Suzuri comes from the personal tap `asahium/tap`. That tap ships casks with `*flight` blocks, so `setup.sh` runs `brew trust --tap asahium/tap` before installing from it.
 
 > Already installed apps will be skipped. Missing ones will prompt for confirmation.
 > `setup.sh` does not apply macOS Finder/Dock/keyboard defaults.

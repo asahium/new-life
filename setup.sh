@@ -288,6 +288,13 @@ install_brew_packages() {
         run_logged brew tap "$tap_name" || true
     done
 
+    # Trust the personal tap: it contains casks with *flight blocks, so Homebrew
+    # refuses to load any cask from it until the tap is explicitly trusted.
+    if brew tap 2>/dev/null | grep -qx "asahium/tap"; then
+        print_info "Trusting tap asahium/tap..."
+        run_logged brew trust --tap asahium/tap || print_warning "Could not trust asahium/tap"
+    fi
+
     # Install/update formulae (CLI tools)
     print_info "Installing CLI tools..."
     grep '^brew ' "$SCRIPT_DIR/Brewfile" | while read -r line; do
@@ -320,8 +327,12 @@ install_brew_packages() {
         case "$cask" in
             "ghostty")           app_name="Ghostty" ;;
             "umputun/apps/agterm") app_name="agterm" ;;
+            "asahium/tap/suzuri") app_name="Suzuri" ;;
             "cursor")            app_name="Cursor" ;;
             "zed")               app_name="Zed" ;;
+            "firefox")           app_name="Firefox" ;;
+            "tinycast")          app_name="Tinycast" ;;
+            "vorssaint")         app_name="Vorssaint" ;;
             "docker")            app_name="Docker" ;;
             "jetbrains-toolbox") app_name="JetBrains Toolbox" ;;
             "obsidian")          app_name="Obsidian" ;;

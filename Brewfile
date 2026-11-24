@@ -2,6 +2,7 @@
 tap "homebrew/bundle"
 tap "jepeake/mtop"
 tap "umputun/apps"
+tap "asahium/tap"            # Personal tap
 
 # ===========================================
 # CLI Tools
@@ -32,6 +33,7 @@ brew "mtop"                  # Apple Silicon performance monitor
 brew "tree"
 brew "trash"                 # Move to trash instead of rm
 brew "nnn"                   # Terminal file manager
+brew "yazi"                  # Terminal file manager (fast, image previews)
 
 # Development
 brew "tmux"                  # Terminal multiplexer
@@ -70,6 +72,7 @@ cask "ghostty"
 cask "umputun/apps/agterm"    # Terminal for agentic flow (libghostty engine)
 cask "cursor"
 cask "zed"
+cask "asahium/tap/suzuri"    # Writing+code editor built on Zed (from personal tap)
 
 # Development
 cask "docker"
@@ -83,6 +86,7 @@ cask "zoom"
 
 # Browsers
 cask "brave-browser"
+cask "firefox"
 
 # Media
 cask "vlc"
@@ -91,3 +95,5 @@ cask "obs"
 # Utilities
 cask "maccy"                 # Clipboard manager
 cask "the-unarchiver"
+cask "tinycast"              # Application launcher and productivity tool
+cask "vorssaint"             # Menu bar toolkit (keep-awake, monitor, volume mixer)
