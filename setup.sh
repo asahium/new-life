@@ -111,7 +111,8 @@ ask_install() {
         print_info "Installing ${name} (--yes)"
         return 0
     fi
-    read -p "  Install ${name}? [y/N] " -n 1 -r
+    # Called inside `grep ... | while read` loops, so stdin is the Brewfile pipe.
+    read -p "  Install ${name}? [y/N] " -n 1 -r < /dev/tty
     echo
     [[ $REPLY =~ ^[Yy]$ ]]
 }
